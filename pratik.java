@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const TodoApp = () => {
   const [todos, setTodos] = useState([]);
@@ -8,30 +8,35 @@ const TodoApp = () => {
   const addTask = (e) => {
     e.preventDefault();
     if (!task.trim()) return;
-    const newTodo = { id: Date.now(), text: task, completed: false };
+    
+    // Using a more robust ID than Date.now() if tasks are added extremely fast
+    const newTodo = { id: crypto.randomUUID(), text: task, completed: false };
     setTodos([...todos, newTodo]);
     setTask("");
   };
 
   // Toggle completion
   const toggleComplete = (id) => {
-    setTodos(todos.map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    ));
+    setTodos(prevTodos => 
+      prevTodos.map(item => 
+        item.id === id ? { ...item, completed: !item.completed } : item
+      )
+    );
   };
 
   // Delete task
   const deleteTask = (id) => {
-    setTodos(todos.filter(item => item.id !== id));
+    setTodos(prevTodos => prevTodos.filter(item => item.id !== id));
   };
 
   return (
     <div style={styles.container}>
+      {/* Moved CSS to a single template literal for cleaner rendering */}
       <style>{`
-        .todo-item { transition: all 0.3s ease; border-bottom: 1px solid #eee; }
-        .todo-item:hover { background-color: #f9f9f9; }
-        .completed { text-decoration: line-through; color: #888; }
-        button:active { transform: scale(0.95); }
+        .todo-item { transition: all 0.2s ease; border-bottom: 1px solid #eee; }
+        .todo-item:hover { background-color: #fcfcfc; }
+        .completed-text { text-decoration: line-through; color: #aaa; }
+        .todo-button:active { transform: scale(0.95); }
       `}</style>
 
       <div style={styles.card}>
@@ -40,12 +45,12 @@ const TodoApp = () => {
         <form onSubmit={addTask} style={styles.inputGroup}>
           <input 
             type="text" 
-            placeholder="Add a new task..." 
+            placeholder="What needs to be done?" 
             value={task}
             onChange={(e) => setTask(e.target.value)}
             style={styles.input}
           />
-          <button type="submit" style={styles.addButton}>Add</button>
+          <button type="submit" className="todo-button" style={styles.addButton}>Add</button>
         </form>
 
         <div style={styles.list}>
@@ -53,13 +58,18 @@ const TodoApp = () => {
             <div key={todo.id} className="todo-item" style={styles.item}>
               <div 
                 onClick={() => toggleComplete(todo.id)} 
-                style={{ ...styles.text, cursor: 'pointer' }}
-                className={todo.completed ? 'completed' : ''}
+                style={styles.textWrapper}
               >
-                {todo.completed ? '✓ ' : '○ '} {todo.text}
+                <span style={{ marginRight: '10px', color: todo.completed ? '#4caf50' : '#ccc' }}>
+                  {todo.completed ? '●' : '○'}
+                </span>
+                <span className={todo.completed ? 'completed-text' : ''}>
+                  {todo.text}
+                </span>
               </div>
               <button 
                 onClick={() => deleteTask(todo.id)} 
+                className="todo-button"
                 style={styles.deleteButton}
               >
                 Delete
@@ -68,80 +78,46 @@ const TodoApp = () => {
           ))}
         </div>
 
-        {todos.length === 0 && <p style={styles.empty}>No tasks yet. Start adding some!</p>}
+        {todos.length === 0 ? (
+          <p style={styles.empty}>No tasks yet. Start adding some!</p>
+        ) : (
+          <div style={styles.footer}>
+            {todos.filter(t => !t.completed).length} items left
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// Inline CSS Styles
+// Styles updated for better layout
 const styles = {
   container: {
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: '100px',
     minHeight: '100vh',
-    backgroundColor: '#f0f2f5',
-    fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif'
+    backgroundColor: '#f4f7f6',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
   card: {
     background: '#fff',
     padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+    borderRadius: '16px',
+    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
     width: '100%',
-    maxWidth: '400px'
+    maxWidth: '450px',
+    height: 'fit-content'
   },
-  title: {
-    margin: '0 0 1.5rem',
-    color: '#333',
-    textAlign: 'center'
-  },
-  inputGroup: {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '1.5rem'
-  },
-  input: {
-    flex: 1,
-    padding: '10px',
-    borderRadius: '6px',
-    border: '1px solid #ddd',
-    fontSize: '1rem'
-  },
-  addButton: {
-    padding: '10px 20px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '600'
-  },
-  item: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 5px'
-  },
-  text: {
-    fontSize: '1.1rem',
-    color: '#444'
-  },
-  deleteButton: {
-    backgroundColor: 'transparent',
-    color: '#ff4d4d',
-    border: '1px solid #ff4d4d',
-    padding: '4px 8px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.8rem'
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#999',
-    marginTop: '1rem'
-  }
+  title: { margin: '0 0 1.5rem', color: '#1a1a1a', textAlign: 'left', fontSize: '1.8rem', fontWeight: '800' },
+  inputGroup: { display: 'flex', gap: '8px', marginBottom: '1.5rem' },
+  input: { flex: 1, padding: '12px', borderRadius: '8px', border: '2px solid #eee', fontSize: '1rem', outline: 'none' },
+  addButton: { padding: '10px 20px', backgroundColor: '#000', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' },
+  item: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0' },
+  textWrapper: { display: 'flex', alignItems: 'center', cursor: 'pointer', flex: 1, fontSize: '1.05rem' },
+  deleteButton: { backgroundColor: '#fff', color: '#ff4d4f', border: '1px solid #ffccc7', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem' },
+  empty: { textAlign: 'center', color: '#aaa', marginTop: '2rem', fontStyle: 'italic' },
+  footer: { marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee', fontSize: '0.85rem', color: '#666' }
 };
 
 export default TodoApp;
